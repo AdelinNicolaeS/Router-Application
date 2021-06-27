@@ -1,0 +1,49 @@
+=============== STANCA ADELIN-NICOLAE 321CA ===============
+
+Pentru rezolvarea optima a temei, am decis sa sortez folosind QuickSort tabela
+de rutare inainte de procesarea pachetelor, acest lucru intamplandu-se in
+O(N log N), dupa care, la fiecare cautare de tip get_best_route, am folosit
+cautare binara care se realizeaza in mod optim in O(log N).
+Sortarea s-a facut crescator dupa prefix (ca prim criteriu), iar in caz de
+egalitate, dupa mask. Pentru cautarea binara, verificam daca IP-ul dat ca
+parametru asupra caruia i se aplica masca este egal cu prefixul de la indicele
+respectiv, caz in care vom continua sa cautam in dreapta, fortand gasirea unui
+element din tabela de rutare care indeplineste conditia si are masca maxima.
+
+Programul se desfasoara sub forma unei bucle infinite care pentru orice pachet
+primit, verifica tipul acestuia. Astfel, daca se primeste un pachet ARP Request
+in mod automat se va trimite dinspre vechea destinatie spre vechea sursa un nou
+ARP Reply cu adresa MAC care a fost initial ceruta. In cazul in care a fost
+primit un pachet ARP Reply, se extrag din header-ul ethernet MAC-ul si IP-ul de
+care este nevoie, se updateaza tabela ARP cu noua pereche obtinuta si se pot
+trimite folosind adresa MAC aflata toate pachetele din coada de asteptare. Daca
+pachetul primit este de tip IP, se verifica daca acesta este de tip ICMP si e
+destinat router-ului, caz in care se trimite un ICMP Echo Reply corespunzator.
+Se verifica daca checksum-ul pachetului IP este 0, iar in caz contrar se arunca
+pachetul. In situatia in care parametrul ttl al pachetului este mai mic egal cu
+1, se va renunta la acesta si se va trimite un pachet ICMP TTL Exceeded catre
+sursa pachetului. Se decrementeaza parametrul ttl si se recalculeaza checksumul
+folosind initial functia din schelet. Ulterior acest pas a fost realizat cu
+ajutorul algoritmului incremental descris in RFC 1624. Se cauta cea mai buna
+ruta folosind algoritmul de cautare binara pentru parcurgerea tabelei de
+rutare, iar apoi se verifica daca exista o asemenea ruta. In cazul in care ruta
+nu exista, se va trimite sursei un ICMP Destination Unreachable si se va
+renunta la pachet. In cazul in care nu se cunoaste adresa MAC a destinatiei, se
+va genera un ARP Request pe interfata destinatie, iar pachetul respectiv va fi
+adaugat intr-o coada de asteptare pana cand se va afla adresa MAC. Daca aceasta
+adresa MAC e deja cunoscuta, se seteaza destinatia si sursa pachetului, iar
+acesta este transmis in continuare.
+
+Pentru implementarea bonusului folosind algoritmul incremental de la RFC 1624,
+am construit o functie separata al carei rol este atat de a calcula noul
+checksum, cat si de a decrementa ttl. Astfel, conform algoritmului, trebuia sa
+obtin acel field m de 16 biti care se modifica in momentul in care se scade
+ttl, iar apoi sa aplic formula din RFC care depinde de acest field in starea
+initiala si in starea finala. Conform reprezentarii IP Header-ului, field-ul de
+16 biti din care face parte ttl este alcatuit din acesta si campul protocol,
+deci era nevoie de o concatenare a celor 2 valori, lucru realizat practic prin
+castul campului ttl de la 8 la 16 biti si preluarea bitilor aferenti lui
+protocol.
+
+Functia get_arp_entry este preluata din scheletul de laborator. De asemenea,
+flow-ul pentru rezolvarea temei este preluat din laboratorul 4 si adaptat.
